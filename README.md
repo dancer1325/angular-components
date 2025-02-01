@@ -16,11 +16,9 @@
 
 
 #### Quick links
-[Documentation, demos, and guides][mat-docs] |
-[Frequently Asked Questions](FAQ.md) |
-[Community Google group](https://groups.google.com/forum/#!forum/angular-material2) |
-[Contributing](https://github.com/angular/components/blob/main/CONTRIBUTING.md) |
-[StackBlitz Template](https://stackblitz.com/fork/components-issue)
+* [Documentation, demos, and guides][mat-docs] |
+* [Frequently Asked Questions](FAQ.md) |
+* [Community Google group](https://groups.google.com/forum/#!forum/angular-material2) |
 
 ## About the team
 
