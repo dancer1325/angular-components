@@ -1,36 +1,27 @@
 # ng-update schematic
 
-**Note** The CDK ng-update schematic is the foundation for the Angular Material update schematic.
-This is achieved by making the ng-update code for the CDK as reusable as possible.
+* CDK ng-update schematic
+  * 👀== foundation for the Angular Material update schematic 👀
+    * Thanks to: 💡CDK ng-update code is reusable 💡
 
-This document also applies for the Angular Material `ng-update`.
+* `ng-update` schematic
+  * == MULTIPLE migration entry-points /
+    * EACH entry-point -- targets a -- specific Angular CDK or Angular Material version
+        
+        | Target Version | Description                              |
+        |----------------|------------------------------------------|
+        | V6 | Upgrade from any version -- to -- v6.0.0 |
+        | V7 | Upgrade from any version -- to -- v7.0.0 |
+        | V8 | Upgrade from any version -- to -- v8.0.0 |
+        | V9 | Upgrade from any version -- to -- v9.0.0 |
 
----
-
-The `ng-update` schematic consists of multiple migration entry-points where every entry-point
-targets a specific Angular CDK or Angular Material version.
-
-
-As of right now, we have multiple migration entry-points that handle the breaking changes for a
-given target version:
-
-| Target Version | Description            |
-|----------------|------------------------|
-| V6 | Upgrade from any version to v6.0.0 |
-| V7 | Upgrade from any version to v7.0.0 |
-| V8 | Upgrade from any version to v8.0.0 |
-| V9 | Upgrade from any version to v9.0.0 |
-
-Note that the migrations run _in order_ if multiple versions are implicitly targeted. For
-example, consider an application which uses Angular Material v5.0.0. In case the developer runs
-`ng update`, the Angular CLI **only** installs V7 and runs the V6 and V7 migrations _in order_.
-
-This shows that we technically need to keep all migrations in the code base because
-the CLI usually only installs the latest version and expects all migrations for past
-major versions to be present.
+    * 👀if multiple versions are implicitly targeted -> run _in order_ 👀  
+      * _Example:_ if an application uses Angular Material v7.0.0 & you run `ng update` -> Angular CLI ONLY -- running migrations V8, V9 -- installs ONLY V9
+      * ⚠️keep ALL migrations | code base ⚠️
 
 ## Update concept
 
+* TODO:
 The goal of the update schematic is to automatically migrate code that is affected by breaking
 changes of the target version. Most of the time we can apply such automatic migrations, but
 there are also a few breaking changes that cannot be migrated automatically.
@@ -40,49 +31,48 @@ attention.
 
 ## Transforming TypeScript files
 
-In order to automatically migrate TypeScript source files, we take advantage of the TypeScript
-Compiler API which allows us to parse and work with the AST of project source files. We built
-a small framework for analyzing and updating project source files that is called `update-tool`.
+* `update-tool`
+  * := small framework /
+    * source files are
+      * analyzed
+      * updated
+        * 👀-- via -- TypeScript Compiler API 👀
+          * -> enable parse and work -- with the -- project source files' AST
+  * goal
+    * being extremely
+      * fast
+      * flexible 
+  * 💡== ALTERNATIVE TO `tslint` 💡
+    * 👀ORIGINAL `ng update` implementation / used `tslint` -> issues 👀
+      * -- NO support for -- HTML templates and stylesheets
+      * | upgrade files, 
+        * reruns ALL upgrade lint rules -> TSLint -- recursively visits the -- nodes -> performance issue
+        * recreates the TypeScript program -> memory pressure
+      * TSLint NOT guaranteed to be installed | CLI projects
+        * see [here](https://github.com/angular/angular-cli/issues/14555)
+      * NO *global analysis* phase
+        * Reason: 🧠 lint rules -- ONLY able to visit -- source files 🧠
+      * No flexibility ==
+          * NO ensure source files -- are ONLY analyzed -- 1! time
+          * NO way to implement a progress bar
+    * 👀CURRENT `ng update` / use `update-tool` 👀
+      * abstraction of file system & run migrations programmatically
+        * == migrations -- can run -- 
+          * | CLI & google3
+          * standalone / -- outside -- `ng update`
+      * -- integrated support for -- HTML templates and stylesheets
+      * migrations -- ONLY run -- 1 / source file (EVEN if source file | MULTIPLE TypeScript projects)
+      * program created 1 / TypeScript project
+      * migration failures do NOT retain `ts.Node` instances (AVOID the tslint memory leak)
+      * replacements -- are performed -- | virtual file system
+      * FULL flexibility
+      * global analysis phase
 
-The `update-tool` has been specifically built with the goal of being extremely fast and
-flexible. This tool had to be built because our initial `ng update` implementation which
-used `tslint` had various issues:
+* concepts for transforming TypeScript source files
 
-* No support for HTML templates and stylesheets (workaround was needed)
-* Reruns all upgrade lint rules after file has been updated (significant performance issue for projects with a lot of files)
-* Recreates the TypeScript program each time a source file has been updated (significant memory pressure for big TypeScript projects, causing OOM exceptions)
-* TSLint recursively visits the nodes of all source files for each upgrade lint rule (performance issue)
-* TSLint is not guaranteed to be installed in CLI projects. See: https://github.com/angular/angular-cli/issues/14555
-* TSLint replacements lead to memory leaks due to the retained TypeScript nodes
-* No way to have a *global analysis* phase since lint rules are only able to visit source files.
-* No flexibility. i.e.
-  * No way to ensure source files are only analyzed a single time
-  * No way to implement a progress bar
-  * No easy way to add support for HTML templates or stylesheets
-
-All of these problems that `tslint` had, have been solved when we built the
-`update-tool`. The tool currently has the following differences compared to `tslint`:
-
-* Abstraction of file system and ability to run migrations programmatically.
-  * Migrations can run in the CLI and in google3.
-  * Migrations can run standalone outside of `ng update`
-* Integrated support for the HTML templates and stylesheets
-* Only runs migrations once per source file.
-  * Even if a source file is part of multiple TypeScript projects.
-* Program is only created once per TypeScript project. Also the type checker is only retrieved once.
-* Migration failures are guaranteed to not retain `ts.Node` instances (avoiding a common tslint memory leak)
-* Replacements are performed within the virtual file system (best practice for schematics)
-* TypeScript program is only recursively visited **once**
-* Full flexibility (e.g. allowing us to implement a progress bar)
-* Possibility to have a *global analysis* phase (unlike with tslint where only individual source files can be analyzed)
-
-There also other various concepts for transforming TypeScript source files, but most of them
-don't provide a simple API for replacements and reporting. Read more about the possible
-approaches below:
-
-|Description | Evaluation |
-|------------|------------|
-| Regular Expressions | Too brittle. No type checking possible. Regular Expression _can_ be used in combination with some real AST walking |
+|Description | Evaluation                                                                                                                                                                                                                                                              |
+|------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Regular Expressions | TODO: Too brittle. No type checking possible. Regular Expression _can_ be used in combination with some real AST walking                                                                                                                                                |
 | TypeScript transforms (no emit) | This would be a good solution but there is no API to serialize the transformed AST into source code without using the `ts.Printer`. The printer can be used to serialize the AST but it breaks formatting, code style and more. This is not acceptable for a migration. |
 
 ### Upgrade data for target versions
