@@ -51,4 +51,4 @@ testem.log
 *.log
 .ng-dev.user*
 .husky/_
-/guides/examples/*/.vscode/*
+/guides/examples/gettingStarted/.vscode/*
